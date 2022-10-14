@@ -4,6 +4,7 @@ This area is primarily for AWS provider contributors and maintainers. For inform
 
 AMP (**A**mazon **M**anaged Service for **P**rometheus) is also called just _Prometheus_ or _Prometheus Service_.
 
+
 ## Handy Links
 
 * [Find out about contributing](https://hashicorp.github.io/terraform-provider-aws/#contribute) to the AWS provider!

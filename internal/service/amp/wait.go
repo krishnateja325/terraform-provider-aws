@@ -24,7 +24,7 @@ func waitAlertManagerDefinitionCreated(ctx context.Context, conn *prometheusserv
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.AlertManagerDefinitionDescription); ok {
 		if statusCode := aws.StringValue(output.Status.StatusCode); statusCode == prometheusservice.AlertManagerDefinitionStatusCodeCreationFailed {
@@ -45,7 +45,7 @@ func waitAlertManagerDefinitionUpdated(ctx context.Context, conn *prometheusserv
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.AlertManagerDefinitionDescription); ok {
 		if statusCode := aws.StringValue(output.Status.StatusCode); statusCode == prometheusservice.AlertManagerDefinitionStatusCodeUpdateFailed {
@@ -66,10 +66,46 @@ func waitAlertManagerDefinitionDeleted(ctx context.Context, conn *prometheusserv
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.AlertManagerDefinitionDescription); ok {
 		return output, err
+	}
+
+	return nil, err
+}
+
+// waitWorkspaceCreated waits for a Workspace to return "Active"
+func waitWorkspaceCreated(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.WorkspaceSummary, error) {
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{prometheusservice.WorkspaceStatusCodeCreating},
+		Target:  []string{prometheusservice.WorkspaceStatusCodeActive},
+		Refresh: statusWorkspaceCreated(ctx, conn, id),
+		Timeout: workspaceTimeout,
+	}
+
+	outputRaw, err := stateConf.WaitForState()
+
+	if v, ok := outputRaw.(*prometheusservice.WorkspaceSummary); ok {
+		return v, err
+	}
+
+	return nil, err
+}
+
+// waitWorkspaceDeleted waits for a Workspace to return "Deleted"
+func waitWorkspaceDeleted(ctx context.Context, conn *prometheusservice.PrometheusService, arn string) (*prometheusservice.WorkspaceSummary, error) {
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{prometheusservice.WorkspaceStatusCodeDeleting},
+		Target:  []string{resourceStatusDeleted},
+		Refresh: statusWorkspaceDeleted(ctx, conn, arn),
+		Timeout: workspaceTimeout,
+	}
+
+	outputRaw, err := stateConf.WaitForState()
+
+	if v, ok := outputRaw.(*prometheusservice.WorkspaceSummary); ok {
+		return v, err
 	}
 
 	return nil, err
@@ -83,7 +119,7 @@ func waitRuleGroupNamespaceDeleted(ctx context.Context, conn *prometheusservice.
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.RuleGroupsNamespaceDescription); ok {
 		return output, err
@@ -100,7 +136,7 @@ func waitRuleGroupNamespaceCreated(ctx context.Context, conn *prometheusservice.
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.RuleGroupsNamespaceDescription); ok {
 		return output, err
@@ -117,7 +153,7 @@ func waitRuleGroupNamespaceUpdated(ctx context.Context, conn *prometheusservice.
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.RuleGroupsNamespaceDescription); ok {
 		return output, err
@@ -126,87 +162,32 @@ func waitRuleGroupNamespaceUpdated(ctx context.Context, conn *prometheusservice.
 	return nil, err
 }
 
-func waitWorkspaceCreated(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.WorkspaceDescription, error) {
-	stateConf := &resource.StateChangeConf{
-		Pending: []string{prometheusservice.WorkspaceStatusCodeCreating},
-		Target:  []string{prometheusservice.WorkspaceStatusCodeActive},
-		Refresh: statusWorkspace(ctx, conn, id),
-		Timeout: workspaceTimeout,
-	}
-
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
-
-	if output, ok := outputRaw.(*prometheusservice.WorkspaceDescription); ok {
-		return output, err
-	}
-
-	return nil, err
-}
-
-func waitWorkspaceDeleted(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.WorkspaceDescription, error) {
-	stateConf := &resource.StateChangeConf{
-		Pending: []string{prometheusservice.WorkspaceStatusCodeDeleting},
-		Target:  []string{},
-		Refresh: statusWorkspace(ctx, conn, id),
-		Timeout: workspaceTimeout,
-	}
-
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
-
-	if output, ok := outputRaw.(*prometheusservice.WorkspaceDescription); ok {
-		return output, err
-	}
-
-	return nil, err
-}
-
-func waitWorkspaceUpdated(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.WorkspaceDescription, error) {
-	stateConf := &resource.StateChangeConf{
-		Pending: []string{prometheusservice.WorkspaceStatusCodeUpdating},
-		Target:  []string{prometheusservice.WorkspaceStatusCodeActive},
-		Refresh: statusWorkspace(ctx, conn, id),
-		Timeout: workspaceTimeout,
-	}
-
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
-
-	if output, ok := outputRaw.(*prometheusservice.WorkspaceDescription); ok {
-		return output, err
-	}
-
-	return nil, err
-}
-
-func waitLoggingConfigurationCreated(ctx context.Context, conn *prometheusservice.PrometheusService, workspaceID string) (*prometheusservice.LoggingConfigurationMetadata, error) {
+func waitLoggingConfigurataionCreated(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.LoggingConfigurationMetadata, error) {
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{prometheusservice.LoggingConfigurationStatusCodeCreating},
 		Target:  []string{prometheusservice.LoggingConfigurationStatusCodeActive},
-		Refresh: statusLoggingConfiguration(ctx, conn, workspaceID),
+		Refresh: statusLoggingConfiguration(ctx, conn, id),
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.LoggingConfigurationMetadata); ok {
-		if statusCode := aws.StringValue(output.Status.StatusCode); statusCode == prometheusservice.LoggingConfigurationStatusCodeCreationFailed {
-			tfresource.SetLastError(err, errors.New(aws.StringValue(output.Status.StatusReason)))
-		}
-
 		return output, err
 	}
 
 	return nil, err
 }
 
-func waitLoggingConfigurationDeleted(ctx context.Context, conn *prometheusservice.PrometheusService, workspaceID string) (*prometheusservice.LoggingConfigurationMetadata, error) {
+func waitLoggingConfigurationDeleted(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.LoggingConfigurationMetadata, error) {
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{prometheusservice.LoggingConfigurationStatusCodeDeleting},
 		Target:  []string{},
-		Refresh: statusLoggingConfiguration(ctx, conn, workspaceID),
+		Refresh: statusLoggingConfiguration(ctx, conn, id),
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.LoggingConfigurationMetadata); ok {
 		return output, err
@@ -215,15 +196,15 @@ func waitLoggingConfigurationDeleted(ctx context.Context, conn *prometheusservic
 	return nil, err
 }
 
-func waitLoggingConfigurationUpdated(ctx context.Context, conn *prometheusservice.PrometheusService, workspaceID string) (*prometheusservice.LoggingConfigurationMetadata, error) {
+func waitLoggingConfigurationUpdated(ctx context.Context, conn *prometheusservice.PrometheusService, id string) (*prometheusservice.LoggingConfigurationMetadata, error) {
 	stateConf := &resource.StateChangeConf{
 		Pending: []string{prometheusservice.LoggingConfigurationStatusCodeUpdating},
 		Target:  []string{prometheusservice.LoggingConfigurationStatusCodeActive},
-		Refresh: statusLoggingConfiguration(ctx, conn, workspaceID),
+		Refresh: statusLoggingConfiguration(ctx, conn, id),
 		Timeout: workspaceTimeout,
 	}
 
-	outputRaw, err := stateConf.WaitForStateContext(ctx)
+	outputRaw, err := stateConf.WaitForState()
 
 	if output, ok := outputRaw.(*prometheusservice.LoggingConfigurationMetadata); ok {
 		if statusCode := aws.StringValue(output.Status.StatusCode); statusCode == prometheusservice.LoggingConfigurationStatusCodeUpdateFailed {

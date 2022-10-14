@@ -955,6 +955,7 @@ func New(_ context.Context) (*schema.Provider, error) {
 			"aws_prometheus_workspace":                amp.ResourceWorkspace(),
 			"aws_prometheus_alert_manager_definition": amp.ResourceAlertManagerDefinition(),
 			"aws_prometheus_rule_group_namespace":     amp.ResourceRuleGroupNamespace(),
+			"aws_prometheus_logging_configuration":    amp.ResourceLoggingConfiguration(),
 
 			"aws_amplify_app":                 amplify.ResourceApp(),
 			"aws_amplify_backend_environment": amplify.ResourceBackendEnvironment(),
